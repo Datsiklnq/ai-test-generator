@@ -2,12 +2,14 @@
 interface GenerateTestScriptProps {
   testScript: string;
   isCopied: boolean;
+  isSaved: boolean;
   handleCopyToClipboard: () => void;
 }
 
 const GenerateTestScript: React.FC<GenerateTestScriptProps> = ({
   testScript,
   isCopied,
+  isSaved,
   handleCopyToClipboard,
 }) => {
   return (
@@ -18,12 +20,20 @@ const GenerateTestScript: React.FC<GenerateTestScriptProps> = ({
       <pre className="whitespace-pre-wrap p-4 bg-gray-800 text-white border rounded-md shadow-md text-sm leading-relaxed">
         {testScript}
       </pre>
-      <button
-        onClick={handleCopyToClipboard}
-        className="mt-4 flex items-center gap-2 px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition-all duration-300"
-      >
-        {isCopied ? "✅ Copied!" : "📋 Copy Test Script"}
-      </button>
+      <div className="mt-4 flex justify-between w-full">
+        {/* Copy button on the left */}
+        <button
+          onClick={handleCopyToClipboard}
+          className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition-all duration-300"
+        >
+          {isCopied ? "✅ Copied!" : "📋 Copy Test Script"}
+        </button>
+
+        {/* Save button on the right */}
+        <button className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition-all duration-300">
+          {isSaved ? "✅ Saved!" : "Save Test Script"}
+        </button>
+      </div>
     </div>
   );
 };
