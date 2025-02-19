@@ -2,12 +2,14 @@
 interface GenerateTestCaseProps {
   testCase: string;
   isCopied: boolean;
+  isSaved: boolean;
   handleCopyToClipboard: () => void;
 }
 
 const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({
   testCase,
   isCopied,
+  isSaved,
   handleCopyToClipboard,
 }) => {
   return (
@@ -18,12 +20,20 @@ const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({
       <pre className="whitespace-pre-wrap p-4 bg-gray-800 text-white border rounded-md shadow-md text-sm leading-relaxed">
         {testCase}
       </pre>
-      <button
-        onClick={handleCopyToClipboard}
-        className="mt-4 flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300"
-      >
-        {isCopied ? "✅ Copied!" : "📋 Copy Test Case"}
-      </button>
+      <div className="mt-4 flex justify-between w-full">
+        {/* Copy button on the left */}
+        <button
+          onClick={handleCopyToClipboard}
+          className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300"
+        >
+          {isCopied ? "✅ Copied!" : "📋 Copy Test Case"}
+        </button>
+
+        {/* Save button on the right */}
+        <button className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300">
+          {isSaved ? "✅ Saved!" : "Save Test Case"}
+        </button>
+      </div>
     </div>
   );
 };
