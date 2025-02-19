@@ -1,10 +1,5 @@
-import GenerateTestCase from "../components/GenerateTestCase";
+import ParentComponent from "../app/pages/ParentComponent";
 
 export default function Home() {
-  return (
-    <main>
-      <GenerateTestCase />
-      {/* <TestCaseGenerator /> */}
-    </main>
-  );
+  return <ParentComponent />;
 }
