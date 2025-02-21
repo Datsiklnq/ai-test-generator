@@ -14,8 +14,23 @@
   }
 }
 
+html {
+  background-color: white;
+  color: black;
+  transition: background-color 0.3s, color 0.3s; /* Optional smooth transition */
+}
+
+/* Dark mode styles */
+html.dark {
+  background-color: black;
+  color: white;
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s, color 0.3s; /* Smooth transition for body too */
+}
+
+body.dark {
+  background-color: #121212; /* Dark background color */
+  color: #f5f5f5; /* Light text color */
 }
