@@ -22,33 +22,38 @@ const Navigation = () => {
 
   // Check initial theme on mount
   useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
+    const isDark = document.documentElement.classList.contains("dark");
+    console.log("Is dark mode:", isDark); // Check if dark mode is active
+    setIsDarkMode(isDark);
   }, []);
 
   const toggleMenu = () => setIsOpen((prev) => !prev);
 
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle("dark");
+    console.log(document.documentElement.classList); // Log the class toggle
     setIsDarkMode((prev) => !prev);
   };
 
-  const linkClasses = (href: string) => {
-    let base =
-      "hover:text-gray-300 transition duration-200 transform hover:scale-105";
-    if (pathname === href) {
-      base += " text-yellow-300 font-bold";
-    }
-    return base;
-  };
+  const linkClasses = (href: string) =>
+    `px-4 py-2 rounded-md transition-all duration-300 ${
+      pathname === href
+        ? "text-yellow-400 font-semibold bg-gray-800"
+        : "hover:text-yellow-300 hover:bg-gray-800"
+    }`;
 
   return (
-    <nav className="w-full fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg backdrop-blur-md">
-      <div className="w-full px-8">
+    <nav className="w-full fixed top-0 left-0 right-0 z-50 bg-gray-900 bg-opacity-80 backdrop-blur-lg shadow-md text-white">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center py-4">
-          <h1 className="text-2xl font-bold">AI Test Case Generator</h1>
+          {/* Logo */}
+          <h1 className="text-xl md:text-2xl font-bold tracking-wide bg-gradient-to-r from-yellow-400 to-yellow-200 bg-clip-text text-transparent">
+            ⚡ AI Test Generator
+          </h1>
+
           <div className="flex items-center space-x-4">
             {/* Desktop Navigation */}
-            <div className="hidden md:flex space-x-8">
+            <div className="hidden md:flex space-x-6">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href} className={linkClasses(link.href)}>
                   {link.name}
@@ -60,44 +65,50 @@ const Navigation = () => {
             <button
               onClick={toggleDarkMode}
               aria-label="Toggle dark mode"
-              className="hidden md:block focus:outline-none"
+              className="hidden md:block p-2 bg-gray-800 rounded-md hover:bg-gray-700"
             >
-              {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+              {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
             </button>
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden focus:outline-none"
+              className="md:hidden p-2 rounded-md bg-gray-800 hover:bg-gray-700"
               onClick={toggleMenu}
               aria-label="Toggle navigation menu"
               aria-expanded={isOpen}
             >
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
+              {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation with Transition */}
+      {/* Mobile Navigation */}
       <div
-        className={`w-full md:hidden bg-gradient-to-r from-blue-600 to-blue-500 py-4 px-6 space-y-4 text-center transform origin-top transition-all duration-300 ease-in-out ${
-          isOpen ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0 pointer-events-none"
+        className={`absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-lg transition-transform duration-300 ${
+          isOpen ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0 pointer-events-none"
         }`}
       >
-        {navLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`${linkClasses(link.href)} block`}
-            onClick={() => setIsOpen(false)}
+        <div className="py-6 px-6 space-y-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`block text-center ${linkClasses(link.href)}`}
+              onClick={() => setIsOpen(false)}
+            >
+              {link.name}
+            </Link>
+          ))}
+          {/* Dark Mode Toggle (Mobile) */}
+          <button
+            onClick={toggleDarkMode}
+            aria-label="Toggle dark mode"
+            className="w-full py-2 bg-gray-800 rounded-md hover:bg-gray-700"
           >
-            {link.name}
-          </Link>
-        ))}
-        {/* Dark Mode Toggle (Mobile) */}
-        <button onClick={toggleDarkMode} aria-label="Toggle dark mode" className="focus:outline-none">
-          {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
-        </button>
+            {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
+          </button>
+        </div>
       </div>
     </nav>
   );
