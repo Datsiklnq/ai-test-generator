@@ -1,34 +1,51 @@
-"use client";
-import { useState, useEffect } from "react";
+"use client"; // Add this line at the top of your component file
+
+import { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
-import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"; // Import Trash2 icon for delete button
 
 interface TestCase {
   id: string;
+  title: string;
   content: string;
-  createdAt: string; // Should be a valid ISO string.
+  createdAt: string;
 }
 
 const SavedTestCasesPage = () => {
   const [savedTestCases, setSavedTestCases] = useState<TestCase[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const isProcessing = useRef(false); // Prevents duplicate calls
 
   useEffect(() => {
     const stored = localStorage.getItem("savedTestCases");
     const initialCases = stored ? JSON.parse(stored) : [];
+
+    const seenIds = new Set<string>();
     const normalizedCases = initialCases.map((item: any) => {
-      // Ensuring each case has a proper createdAt field in ISO format.
-      if (typeof item === "string") {
+      const id = item.id || crypto.randomUUID();
+      if (seenIds.has(id)) {
+        console.warn(`Duplicate ID detected: ${id}, generating new ID`);
         return {
           id: crypto.randomUUID(),
-          content: item,
-          createdAt: new Date().toISOString(),
+          title:
+            item.title ||
+            (typeof item === "string"
+              ? item.split("\n")[0]
+              : "Untitled Test Case"),
+          content: typeof item === "string" ? item : item.content || "",
+          createdAt: item.createdAt || new Date().toISOString(),
         };
       }
+      seenIds.add(id);
       return {
-        ...item,
-        createdAt: item.createdAt || new Date().toISOString(), // Handle missing createdAt
+        id,
+        title:
+          item.title ||
+          (typeof item === "string"
+            ? item.split("\n")[0]
+            : "Untitled Test Case"),
+        content: typeof item === "string" ? item : item.content || "",
+        createdAt: item.createdAt || new Date().toISOString(),
       };
     });
 
@@ -36,34 +53,40 @@ const SavedTestCasesPage = () => {
     localStorage.setItem("savedTestCases", JSON.stringify(normalizedCases));
   }, []);
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = (
+    id: string,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    event.stopPropagation(); // Prevent bubbling up
+
+    setExpandedId((prevId) => (prevId === id ? null : id)); // Ensure only one card expands at a time
   };
 
-  const getTestCaseTitle = (content: string) => {
-    const firstLine = content.split("\n")[0];
-    return firstLine.length > 40 ? firstLine.slice(0, 40) + "..." : firstLine;
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: true,
+    });
   };
 
-  const getCreationDate = (createdAt: string) => {
-    const date = new Date(createdAt);
-    if (isNaN(date.getTime())) {
-      return "Invalid Date";
-    }
+  const deleteTestCase = (id: string) => {
+    // Filter out the deleted test case from the state
+    const updatedTestCases = savedTestCases.filter(
+      (testCase) => testCase.id !== id
+    );
 
-    // Custom format example: "February 21, 2025 at 10:34 PM"
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long", // "Monday"
-      year: "numeric", // "2025"
-      month: "long", // "February"
-      day: "numeric", // "21"
-      hour: "numeric", // "10"
-      minute: "numeric", // "34"
-      second: "numeric", // "47"
-      hour12: true, // Use 12-hour format
-    };
+    // Update the state
+    setSavedTestCases(updatedTestCases);
 
-    return new Intl.DateTimeFormat("en-US", options).format(date); // Adjust for your locale if necessary
+    // Update localStorage
+    localStorage.setItem("savedTestCases", JSON.stringify(updatedTestCases));
   };
 
   return (
@@ -74,44 +97,65 @@ const SavedTestCasesPage = () => {
           📂 Saved Test Cases
         </h2>
         {savedTestCases.length > 0 ? (
-          <ul className="space-y-4">
-            {savedTestCases.map((testCase) => (
-              <motion.li
-                key={testCase.id}
-                className="cursor-pointer bg-gray-800 rounded-2xl shadow-lg transition-all duration-300 overflow-hidden border border-gray-700 hover:shadow-xl"
-                onClick={() => toggleExpand(testCase.id)}
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="p-4 flex justify-between items-center bg-blue-600 text-white rounded-t-2xl">
-                  <span className="font-medium text-lg">
-                    {getTestCaseTitle(testCase.content)}
-                  </span>
-                  {expandedId === testCase.id ? (
-                    <ChevronUp size={24} />
-                  ) : (
-                    <ChevronDown size={24} />
-                  )}
+          <div className="flex flex-col gap-6">
+            {savedTestCases.map((testCase) => {
+              // Check whether the current test case is expanded
+              const isExpanded = expandedId === testCase.id;
+
+              return (
+                <div
+                  key={testCase.id}
+                  className="bg-gray-800 rounded-3xl shadow-xl border border-gray-700 transition-all transform hover:scale-105 hover:shadow-2xl hover:border-gray-600 relative"
+                >
+                  <div className="p-6">
+                    <div
+                      className="flex justify-between items-center cursor-pointer"
+                      onClick={(e) => toggleExpand(testCase.id, e)}
+                    >
+                      <div>
+                        <h3 className="text-xl font-semibold text-white">
+                          {testCase.title}
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                          {formatDate(testCase.createdAt)}
+                        </p>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp size={24} className="text-gray-400" />
+                      ) : (
+                        <ChevronDown size={24} className="text-gray-400" />
+                      )}
+                    </div>
+
+                    {/* Conditionally render delete icon if the card is expanded */}
+                    {isExpanded && (
+                      <div className="absolute top-32 right-20">
+                        <button
+                          onClick={() => deleteTestCase(testCase.id)}
+                          className="text-gray-400 hover:text-red-500 focus:outline-none transition-all ease-in-out transform hover:scale-110"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Only render content if the card is expanded */}
+                    <div
+                      className={`mt-4 bg-gray-700 text-gray-200 rounded-2xl p-6 transition-all ease-in-out overflow-hidden ${
+                        isExpanded
+                          ? "h-auto opacity-100" // Fully expanded
+                          : "h-0 opacity-0" // Collapsed state, no visible content
+                      }`}
+                    >
+                      <pre className="whitespace-pre-wrap text-sm p-4 bg-gray-600 rounded-lg border border-gray-500 shadow-inner">
+                        {testCase.content}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-                {expandedId === testCase.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="p-4 bg-gray-700 text-gray-200 rounded-b-2xl"
-                  >
-                    <pre className="whitespace-pre-wrap text-sm p-4 bg-gray-600 rounded-lg border border-gray-500 shadow-inner">
-                      {testCase.content}
-                    </pre>
-                    {/* Show formatted timestamp */}
-                    <p className="text-sm text-gray-400 mt-2">
-                      Test Case Created on:{" "}
-                      {getCreationDate(testCase.createdAt)}
-                    </p>
-                  </motion.div>
-                )}
-              </motion.li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         ) : (
           <p className="text-gray-400 text-center text-lg">
             No saved test cases yet.
