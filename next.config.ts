@@ -1,7 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+// next.config.ts
+module.exports = {
+  // No need for experimental appDir option in Next.js 13+
+  reactStrictMode: true,
 };
-
-export default nextConfig;
