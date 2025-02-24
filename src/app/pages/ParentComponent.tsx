@@ -65,7 +65,10 @@ const ParentComponent = () => {
 
         {/* Prompt Input */}
         <div className="w-full max-w-2xl mb-6">
-          <label htmlFor="prompt" className="block text-lg font-medium text-gray-300 mb-2">
+          <label
+            htmlFor="prompt"
+            className="block text-lg font-medium text-gray-300 mb-2"
+          >
             Enter Test Case Prompt:
           </label>
           <textarea

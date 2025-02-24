@@ -1,12 +1,10 @@
-"use client"; // Add this line at the top of your component file
-
-import { useState, useEffect, useRef } from "react";
+"use client";
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Navigation from "@/components/Navigation";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"; // Import Trash2 icon for delete button
 
 interface TestCase {
   id: string;
-  title: string;
   content: string;
   createdAt: string;
 }
@@ -14,56 +12,49 @@ interface TestCase {
 const SavedTestCasesPage = () => {
   const [savedTestCases, setSavedTestCases] = useState<TestCase[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const isProcessing = useRef(false); // Prevents duplicate calls
 
   useEffect(() => {
-    const stored = localStorage.getItem("savedTestCases");
-    const initialCases = stored ? JSON.parse(stored) : [];
-
-    const seenIds = new Set<string>();
-    const normalizedCases = initialCases.map((item: any) => {
-      const id = item.id || crypto.randomUUID();
-      if (seenIds.has(id)) {
-        console.warn(`Duplicate ID detected: ${id}, generating new ID`);
-        return {
-          id: crypto.randomUUID(),
-          title:
-            item.title ||
-            (typeof item === "string"
-              ? item.split("\n")[0]
-              : "Untitled Test Case"),
-          content: typeof item === "string" ? item : item.content || "",
-          createdAt: item.createdAt || new Date().toISOString(),
-        };
+    const fetchSavedTestCases = async () => {
+      try {
+        const response = await fetch("/api/saved-test-cases");
+        if (!response.ok) {
+          throw new Error("Failed to load test cases");
+        }
+        const data = await response.json();
+        setSavedTestCases(data);
+      } catch (error) {
+        console.error("Error fetching test cases:", error);
       }
-      seenIds.add(id);
-      return {
-        id,
-        title:
-          item.title ||
-          (typeof item === "string"
-            ? item.split("\n")[0]
-            : "Untitled Test Case"),
-        content: typeof item === "string" ? item : item.content || "",
-        createdAt: item.createdAt || new Date().toISOString(),
-      };
-    });
+    };
 
-    setSavedTestCases(normalizedCases);
-    localStorage.setItem("savedTestCases", JSON.stringify(normalizedCases));
+    fetchSavedTestCases();
   }, []);
 
   const toggleExpand = (
     id: string,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
-    event.stopPropagation(); // Prevent bubbling up
-
-    setExpandedId((prevId) => (prevId === id ? null : id)); // Ensure only one card expands at a time
+    event.stopPropagation();
+    setExpandedId((prevId) => (prevId === id ? null : id)); // Toggle expansion
   };
 
-  const formatDate = (isoString: string) => {
-    const date = new Date(isoString);
+  const formatDate = (dateValue: any) => {
+    if (!dateValue) return "Unknown Date";
+
+    let date;
+
+    if (typeof dateValue === "object" && dateValue._seconds) {
+      // Firestore Timestamp conversion
+      date = new Date(dateValue._seconds * 1000);
+    } else if (typeof dateValue === "string" || typeof dateValue === "number") {
+      // Handle ISO strings or numbers
+      date = new Date(dateValue);
+    } else {
+      return "Invalid Date";
+    }
+
+    if (isNaN(date.getTime())) return "Invalid Date";
+
     return date.toLocaleString("en-US", {
       weekday: "long",
       year: "numeric",
@@ -76,30 +67,16 @@ const SavedTestCasesPage = () => {
     });
   };
 
-  const deleteTestCase = (id: string) => {
-    // Filter out the deleted test case from the state
-    const updatedTestCases = savedTestCases.filter(
-      (testCase) => testCase.id !== id
-    );
-
-    // Update the state
-    setSavedTestCases(updatedTestCases);
-
-    // Update localStorage
-    localStorage.setItem("savedTestCases", JSON.stringify(updatedTestCases));
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 bg-gray-900 text-gray-200">
-      <Navigation />
       <div className="w-full max-w-3xl mt-16">
+        <Navigation />
         <h2 className="text-3xl font-semibold text-center text-white mb-6">
           📂 Saved Test Cases
         </h2>
         {savedTestCases.length > 0 ? (
           <div className="flex flex-col gap-6">
             {savedTestCases.map((testCase) => {
-              // Check whether the current test case is expanded
               const isExpanded = expandedId === testCase.id;
 
               return (
@@ -114,7 +91,7 @@ const SavedTestCasesPage = () => {
                     >
                       <div>
                         <h3 className="text-xl font-semibold text-white">
-                          {testCase.title}
+                          Test Case {testCase.id.slice(-6)}
                         </h3>
                         <p className="text-sm text-gray-400">
                           {formatDate(testCase.createdAt)}
@@ -127,24 +104,9 @@ const SavedTestCasesPage = () => {
                       )}
                     </div>
 
-                    {/* Conditionally render delete icon if the card is expanded */}
-                    {isExpanded && (
-                      <div className="absolute top-32 right-20">
-                        <button
-                          onClick={() => deleteTestCase(testCase.id)}
-                          className="text-gray-400 hover:text-red-500 focus:outline-none transition-all ease-in-out transform hover:scale-110"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Only render content if the card is expanded */}
                     <div
                       className={`mt-4 bg-gray-700 text-gray-200 rounded-2xl p-6 transition-all ease-in-out overflow-hidden ${
-                        isExpanded
-                          ? "h-auto opacity-100" // Fully expanded
-                          : "h-0 opacity-0" // Collapsed state, no visible content
+                        isExpanded ? "h-auto opacity-100" : "h-0 opacity-0"
                       }`}
                     >
                       <pre className="whitespace-pre-wrap text-sm p-4 bg-gray-600 rounded-lg border border-gray-500 shadow-inner">
