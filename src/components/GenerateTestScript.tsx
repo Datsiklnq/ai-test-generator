@@ -1,6 +1,6 @@
 "use client";
 
-import SavedTestCases from "./SavedTestCases";
+import SavedTestCases from "../components/SavedTestCases";
 
 interface GenerateTestCaseProps {
   testScript: string;

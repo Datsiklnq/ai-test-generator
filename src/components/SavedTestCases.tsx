@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCopy } from "./CopyContext"; // Adjust path as needed
+import { toast } from "react-toastify"; // Import toast
+import "react-toastify/dist/ReactToastify.css"; // Import styles
 
 interface SavedTestCasesProps {
   content: string;
   contentType: "testCase" | "testScript";
-  id: string; // Added id to map the test cases
-  onSave?: (content: string, id: string) => void;
+  id: string;
+  onSave?: (content: string, id: string) => Promise<void>; // Ensure it's async
 }
 
 const SavedTestCases: React.FC<SavedTestCasesProps> = ({
@@ -18,11 +20,16 @@ const SavedTestCases: React.FC<SavedTestCasesProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const { isCopied, copyToClipboard } = useCopy();
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(content, id);
+  const handleSave = async () => {
+    if (!onSave) return;
+
+    try {
+      await onSave(content, id); // Only calls API once in `GenerateTestCase.tsx`
       setIsSaved(true);
+
       setTimeout(() => setIsSaved(false), 2000);
+    } catch (error) {
+      console.error("Error saving test case:", error);
     }
   };
 
@@ -31,7 +38,7 @@ const SavedTestCases: React.FC<SavedTestCasesProps> = ({
 
   return (
     <div className="p-4">
-      <div className="flex space-x-2 flex justify-between">
+      <div className="flex space-x-2 justify-between">
         {onSave && (
           <button onClick={handleSave} className={buttonClass}>
             {isSaved ? "✅ Saved!" : "💾 Save"}
