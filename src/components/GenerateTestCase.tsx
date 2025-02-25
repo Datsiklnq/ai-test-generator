@@ -1,14 +1,14 @@
 "use client";
-import { useCopy } from "./CopyContext";
-import SavedTestCases from "./SavedTestCases";
+import { useCopy } from "../components/CopyContext";
+import { toast, ToastContainer } from "react-toastify"; // Import Toast
+import "react-toastify/dist/ReactToastify.css"; // Import styles
+import SavedTestCases from "../components/SavedTestCases";
 
 interface GenerateTestCaseProps {
   testCase: string;
 }
 
 const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({ testCase }) => {
-  const { isCopied, copyToClipboard } = useCopy();
-
   const handleSave = async (content: string, id: string) => {
     try {
       const response = await fetch("/api/saved-test-cases", {
@@ -22,8 +22,18 @@ const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({ testCase }) => {
       if (!response.ok) {
         throw new Error("Failed to save test case");
       }
+
+      // ✅ Prevent duplicate messages by using a unique toast ID
+      toast.success("Test case saved successfully!", {
+        toastId: `save-success-${id}`, // Unique toast ID
+      });
     } catch (error) {
       console.error("Error saving test case:", error);
+
+      // ✅ Prevent duplicate error messages
+      toast.error("❌ Failed to save test case. Try again.", {
+        toastId: `save-error-${id}`, // Unique toast ID
+      });
     }
   };
 
@@ -45,6 +55,9 @@ const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({ testCase }) => {
           />
         )}
       </div>
+
+      {/* ✅ Toast Notifications */}
+      <ToastContainer position="bottom-left" autoClose={3000} />
     </div>
   );
 };
