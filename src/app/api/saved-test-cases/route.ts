@@ -9,8 +9,6 @@ export async function GET() {
     const testCases = testCasesSnapshot.docs.map((doc) => {
       const data = doc.data();
 
-      // console.log("Fetched from Firestore:", data); // 🛠 Debugging line
-
       return {
         id: doc.id,
         title:
@@ -22,10 +20,12 @@ export async function GET() {
         createdAt: data.createdAt?._seconds
           ? new Date(data.createdAt._seconds * 1000).toISOString()
           : new Date().toISOString(),
+        updatedAt: data.updatedAt?._seconds
+          ? new Date(data.updatedAt._seconds * 1000).toISOString()
+          : null, // Ensuring updatedAt is included
       };
     });
 
-    console.log("Final formatted test cases:", testCases); // 🛠 Debugging line
     return NextResponse.json(testCases, { status: 200 });
   } catch (error) {
     console.error("Error fetching test cases:", error);
@@ -40,17 +40,19 @@ export async function POST(req: Request) {
   try {
     const { content, contentType } = await req.json();
 
-    if (!content || !contentType) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    if (!content) {
+      return NextResponse.json(
+        { error: "Content is required" },
+        { status: 400 }
+      );
     }
 
-    // Extract title from first line of content
     const title = content.split("\n")[0].trim() || "Untitled Test Case";
 
     const newTestCaseRef = await db.collection("testCases").add({
-      title, // Save title in Firestore
+      title,
       content,
-      contentType,
+      contentType: contentType || "defaultType", // Ensure it is always set
       createdAt: admin.firestore.Timestamp.now(),
     });
 
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
         id: newTestCaseRef.id,
         title,
         content,
-        contentType,
+        contentType: contentType || "defaultType",
         message: "Test case saved successfully!",
       },
       { status: 201 }
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
   }
 }
 
-// 🔥 NEW: DELETE method to remove test cases
+// 🔥 DELETE method to remove test cases
 export async function DELETE(req: Request) {
   try {
     const { id } = await req.json();
@@ -94,6 +96,47 @@ export async function DELETE(req: Request) {
     console.error("Error deleting test case:", error);
     return NextResponse.json(
       { error: "Error deleting test case" },
+      { status: 500 }
+    );
+  }
+}
+
+// 🔥 PUT method to update test cases
+export async function PUT(req: Request) {
+  try {
+    const { id, title, content } = await req.json();
+
+    // Check if both the title and content are provided
+    if (!id || !content) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Optionally, set the title from content if it's not provided
+    const updatedTitle =
+      title || content.split("\n")[0].trim() || "Untitled Test Case";
+
+    // Ensure that the 'updatedAt' field is set correctly
+    const updatedTestCase = {
+      title: updatedTitle,
+      content,
+      updatedAt: admin.firestore.Timestamp.now(),
+    };
+
+    // Update the document in Firestore
+    await db.collection("testCases").doc(id).update(updatedTestCase);
+
+    // Return success response
+    return NextResponse.json(
+      { message: "Test case updated successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("🔥 Error updating test case:", error);
+    return NextResponse.json(
+      { error: "Error updating test case" },
       { status: 500 }
     );
   }
