@@ -1,5 +1,4 @@
 "use client";
-import { useCopy } from "../components/CopyContext";
 import { toast, ToastContainer } from "react-toastify"; // Import Toast
 import "react-toastify/dist/ReactToastify.css"; // Import styles
 import SavedTestCases from "../components/SavedTestCases";
@@ -23,16 +22,13 @@ const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({ testCase }) => {
         throw new Error("Failed to save test case");
       }
 
-      // ✅ Prevent duplicate messages by using a unique toast ID
       toast.success("Test case saved successfully!", {
-        toastId: `save-success-${id}`, // Unique toast ID
+        toastId: `save-success-${id}`,
       });
     } catch (error) {
       console.error("Error saving test case:", error);
-
-      // ✅ Prevent duplicate error messages
       toast.error("❌ Failed to save test case. Try again.", {
-        toastId: `save-error-${id}`, // Unique toast ID
+        toastId: `save-error-${id}`,
       });
     }
   };
@@ -51,13 +47,19 @@ const GenerateTestCase: React.FC<GenerateTestCaseProps> = ({ testCase }) => {
             id={crypto.randomUUID()}
             content={testCase}
             contentType="testCase"
-            onSave={handleSave} // ✅ API-based saving
+            onSave={handleSave}
           />
         )}
       </div>
 
-      {/* ✅ Toast Notifications */}
-      <ToastContainer position="bottom-left" autoClose={3000} />
+      <ToastContainer
+        position="bottom-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeButton={true}
+        className="fixed bottom-5 left-5 z-50"
+      />
     </div>
   );
 };
