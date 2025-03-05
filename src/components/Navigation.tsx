@@ -11,6 +11,7 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { name: "Home", href: "/" },
+  { name: "Test Case Generator", href: "/pages/generate-test-case" },
   { name: "Saved Test Cases", href: "/saved-test-cases" },
   { name: "Saved Test Scripts", href: "/saved-test-scripts" },
 ];
@@ -23,7 +24,6 @@ const Navigation = () => {
   // Check initial theme on mount
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
-    console.log("Is dark mode:", isDark); // Check if dark mode is active
     setIsDarkMode(isDark);
   }, []);
 
@@ -31,7 +31,6 @@ const Navigation = () => {
 
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle("dark");
-    console.log(document.documentElement.classList); // Log the class toggle
     setIsDarkMode((prev) => !prev);
   };
 
@@ -55,7 +54,11 @@ const Navigation = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6">
               {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} className={linkClasses(link.href)}>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={linkClasses(link.href)}
+                >
                   {link.name}
                 </Link>
               ))}
@@ -75,7 +78,7 @@ const Navigation = () => {
               className="md:hidden p-2 rounded-md bg-gray-800 hover:bg-gray-700"
               onClick={toggleMenu}
               aria-label="Toggle navigation menu"
-              aria-expanded={isOpen}
+              aria-expanded={isOpen ? "true" : "false"}
             >
               {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
@@ -86,7 +89,9 @@ const Navigation = () => {
       {/* Mobile Navigation */}
       <div
         className={`absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-lg transition-transform duration-300 ${
-          isOpen ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0 pointer-events-none"
+          isOpen
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-10 opacity-0 pointer-events-none"
         }`}
       >
         <div className="py-6 px-6 space-y-4">

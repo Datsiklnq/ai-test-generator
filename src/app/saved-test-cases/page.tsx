@@ -74,7 +74,6 @@ const SavedTestCasesPage = () => {
   };
 
   // Handle Save Edit
-  // Handle Save Edit
   const handleSaveEdit = async () => {
     if (!editingTestCase) return;
 
@@ -106,9 +105,8 @@ const SavedTestCasesPage = () => {
 
       toast.success("Test case updated successfully!");
 
-      // Close the edit modal and remove from localStorage
+      // Close the edit modal
       setEditingTestCase(null);
-      localStorage.removeItem("editingTestCase"); // Clean up localStorage
     } catch (error) {
       console.error("Error updating test case:", error);
       toast.error("Oops! Something went wrong. Please try again.");
@@ -215,7 +213,7 @@ const SavedTestCasesPage = () => {
       <ToastContainer
         position="bottom-left"
         autoClose={3000}
-        hideProgressBar={true}
+        hideProgressBar={false}
         newestOnTop={true}
         closeButton={true}
       />
