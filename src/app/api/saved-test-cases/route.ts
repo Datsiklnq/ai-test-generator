@@ -4,7 +4,7 @@ import { admin } from "../../lib/firebaseAdmin";
 const db = admin.firestore();
 const collection = db.collection("testCases");
 
-function serializeTimestamp(value: FirebaseFirestore.Timestamp | undefined) {
+function serializeTimestamp(value: { toDate: () => Date } | undefined) {
   return value?.toDate().toISOString() ?? null;
 }
 
