@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useAuth } from "@/components/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface SavedTestItem {
   id: string;
@@ -12,15 +14,20 @@ interface SavedTestItem {
 }
 
 export default function SavedTestScriptsPage() {
+  const { user, loading: authLoading, getIdToken } = useAuth();
+  const router = useRouter();
   const [scripts, setScripts] = useState<SavedTestItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!authLoading && !user) { router.replace("/login"); return; }
+    if (!user) return;
     const loadScripts = async () => {
       try {
-        const response = await fetch("/api/saved-test-cases");
+        const token = await getIdToken();
+        const response = await fetch("/api/saved-test-cases", { headers: { Authorization: `Bearer ${token}` } });
         if (!response.ok) throw new Error("Unable to load saved scripts.");
         const items: SavedTestItem[] = await response.json();
         setScripts(items.filter((item) => item.contentType === "testScript"));
@@ -31,7 +38,7 @@ export default function SavedTestScriptsPage() {
       }
     };
     void loadScripts();
-  }, []);
+  }, [authLoading, user]);
 
   return (
     <main className="min-h-screen bg-gray-900 px-4 py-24 text-gray-200">
