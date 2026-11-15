@@ -4,149 +4,92 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import GenerateTestCase from "@/components/GenerateTestCase";
 import GenerateTestScript from "@/components/GenerateTestScript";
-import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
-import { CopyProvider } from "@/components/CopyContext";
 
-const ParentComponent = () => {
+export default function GenerateTestPage() {
   const [prompt, setPrompt] = useState("");
-  const [framework, setFramework] = useState("cypress");
+  const [framework, setFramework] = useState("playwright");
   const [testCase, setTestCase] = useState("");
   const [testScript, setTestScript] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleGenerateTestCase();
-    }
-  };
-
-  const handleGenerateTestCase = async () => {
-    if (!prompt) return;
+  const handleGenerate = async () => {
+    if (!prompt.trim() || loading) return;
     setLoading(true);
+    setError("");
+    setTestCase("");
+    setTestScript("");
+
     try {
-      const response = await fetch("/api/generateTestCase", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, framework }),
+        body: JSON.stringify({ prompt: prompt.trim(), framework }),
       });
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Generation failed.");
       setTestCase(data.testCase);
       setTestScript(data.testScript);
-    } catch (error) {
-      console.error("Error generating test case:", error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to generate tests.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <CopyProvider>
-      <div className="relative flex flex-col items-center justify-center min-h-screen px-6 py-12 bg-gradient-to-br from-gray-950 to-black text-gray-200">
-        <Navigation />
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-950 to-black px-6 py-24 text-gray-200">
+      <motion.h1
+        className="mb-8 text-center text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 md:text-5xl"
+        initial={{ opacity: 0, y: -24 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        AI Test Case Generator
+      </motion.h1>
 
-        {/* Title with Motion */}
-        <motion.h2
-          className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-lg mb-8 text-center"
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
+      <section className="mb-6 w-full max-w-2xl">
+        <label htmlFor="framework" className="mb-2 block font-medium text-gray-300">Automation framework</label>
+        <select
+          id="framework"
+          value={framework}
+          onChange={(event) => setFramework(event.target.value)}
+          className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-white"
         >
-          ⚡ AI Test Case Generator
-        </motion.h2>
+          <option value="playwright">Playwright (TypeScript)</option>
+          <option value="cypress">Cypress</option>
+          <option value="selenium">Selenium</option>
+        </select>
+      </section>
 
-        {/* Framework Selector */}
-        <motion.div
-          className="w-full max-w-2xl mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 1 }}
-        >
-          <label className="block text-lg font-medium text-gray-300 mb-2">
-            Select Framework:
-          </label>
-          <select
-            value={framework}
-            onChange={(e) => setFramework(e.target.value)}
-            className="w-full p-3 border border-gray-700 bg-white/10 backdrop-blur-lg text-white rounded-lg shadow-md focus:ring-2 focus:ring-blue-500 focus:outline-none hover:bg-gray-700 transition"
-          >
-            <option value="cypress">Cypress</option>
-            <option value="playwright">Playwright</option>
-            <option value="selenium">Selenium</option>
-          </select>
-        </motion.div>
+      <section className="mb-6 w-full max-w-2xl">
+        <label htmlFor="prompt" className="mb-2 block font-medium text-gray-300">Describe what you want to test</label>
+        <textarea
+          id="prompt"
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void handleGenerate();
+            }
+          }}
+          placeholder="Example: Verify that a user can sign in with valid credentials."
+          rows={5}
+          className="w-full resize-y rounded-lg border border-gray-700 bg-gray-800 p-4 text-white placeholder-gray-400"
+        />
+      </section>
 
-        {/* Prompt Input */}
-        <motion.div
-          className="w-full max-w-2xl mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 1 }}
-        >
-          <label
-            htmlFor="prompt"
-            className="block text-lg font-medium text-gray-300 mb-2"
-          >
-            Enter Test Case Prompt:
-          </label>
-          <textarea
-            id="prompt"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Enter test case prompt (e.g., 'Test login functionality')"
-            className="w-full p-4 border border-gray-700 bg-white/10 backdrop-blur-lg text-white rounded-lg shadow-md focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-400 hover:bg-gray-700 transition resize-none"
-            rows={4}
-          />
-        </motion.div>
+      <Button onClick={handleGenerate} disabled={loading || !prompt.trim()}>
+        {loading ? "Generating..." : "Generate tests"}
+      </Button>
 
-        {/* Generate Button with Animation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1 }}
-        >
-          <Button
-            onClick={handleGenerateTestCase}
-            disabled={loading}
-            className="relative px-10 py-4 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold text-lg shadow-2xl transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-blue-500/50"
-          >
-            {loading ? "Generating..." : "Generate Test Case"}
-            <motion.span
-              className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400 to-purple-500 opacity-50 blur-lg -z-10"
-              animate={{ opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-          </Button>
-        </motion.div>
+      {error && <p role="alert" className="mt-5 text-red-400">{error}</p>}
 
-        {/* Results Section with Animated Cards */}
-        <div className="mt-8 flex flex-wrap justify-center gap-6 w-full">
-          {testCase && (
-            <motion.div
-              className="p-6 bg-white/10 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 w-full max-w-2xl"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 1 }}
-            >
-              <GenerateTestCase testCase={testCase} />
-            </motion.div>
-          )}
-          {testScript && (
-            <motion.div
-              className="p-6 bg-white/10 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 w-full max-w-2xl"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 1 }}
-            >
-              <GenerateTestScript testScript={testScript} />
-            </motion.div>
-          )}
-        </div>
+      <div className="mt-8 flex w-full flex-wrap justify-center gap-6">
+        {testCase && <div className="w-full max-w-2xl"><GenerateTestCase testCase={testCase} /></div>}
+        {testScript && <div className="w-full max-w-2xl"><GenerateTestScript testScript={testScript} /></div>}
       </div>
-    </CopyProvider>
+    </main>
   );
-};
-
-export default ParentComponent;
+}
