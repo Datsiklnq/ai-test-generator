@@ -1,17 +1,18 @@
 import OpenAI from "openai";
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
-
-const openai = new OpenAI({ apiKey });
-const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-
 export type TestFramework = "playwright" | "cypress" | "selenium";
 export interface GeneratedTests { testCase: string; testScript: string; }
 
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
+  return new OpenAI({ apiKey });
+}
+
 export async function generateTests(prompt: string, framework: TestFramework): Promise<GeneratedTests> {
+  const openai = getOpenAIClient();
   const response = await openai.chat.completions.create({
-    model,
+    model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
     response_format: { type: "json_object" },
     temperature: 0.2,
     messages: [
