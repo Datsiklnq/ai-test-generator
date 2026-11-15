@@ -1,143 +1,110 @@
 import { NextResponse } from "next/server";
-import { admin } from "../../lib/firebaseAdmin"; // Ensure this imports correctly
+import { admin } from "../../lib/firebaseAdmin";
 
 const db = admin.firestore();
+const collection = db.collection("testCases");
+
+function serializeTimestamp(value: FirebaseFirestore.Timestamp | undefined) {
+  return value?.toDate().toISOString() ?? null;
+}
 
 export async function GET() {
   try {
-    const testCasesSnapshot = await db.collection("testCases").get();
-    const testCases = testCasesSnapshot.docs.map((doc) => {
-      const data = doc.data();
-
+    const snapshot = await collection.orderBy("createdAt", "desc").get();
+    const items = snapshot.docs.map((document) => {
+      const data = document.data();
       return {
-        id: doc.id,
-        title:
-          data.title ||
-          (data.content
-            ? data.content.split("\n")[0].trim()
-            : "Untitled Test Case"),
-        content: data.content || "No content",
-        createdAt: data.createdAt?._seconds
-          ? new Date(data.createdAt._seconds * 1000).toISOString()
-          : new Date().toISOString(),
-        updatedAt: data.updatedAt?._seconds
-          ? new Date(data.updatedAt._seconds * 1000).toISOString()
-          : null, // Ensuring updatedAt is included
+        id: document.id,
+        title: data.title || data.content?.split("\n")[0]?.trim() || "Untitled",
+        content: data.content || "",
+        contentType: data.contentType === "testScript" ? "testScript" : "testCase",
+        createdAt: serializeTimestamp(data.createdAt) ?? new Date().toISOString(),
+        updatedAt: serializeTimestamp(data.updatedAt),
       };
     });
-
-    return NextResponse.json(testCases, { status: 200 });
+    return NextResponse.json(items);
   } catch (error) {
-    console.error("Error fetching test cases:", error);
-    return NextResponse.json(
-      { error: "Error fetching test cases" },
-      { status: 500 }
-    );
+    console.error("Unable to fetch saved test items:", error);
+    return NextResponse.json({ error: "Unable to fetch saved items." }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { content, contentType } = await req.json();
-
-    if (!content) {
-      return NextResponse.json(
-        { error: "Content is required" },
-        { status: 400 }
-      );
+    const body: unknown = await request.json();
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "A JSON request body is required." }, { status: 400 });
+    }
+    const { content, contentType } = body as { content?: unknown; contentType?: unknown };
+    if (typeof content !== "string" || !content.trim()) {
+      return NextResponse.json({ error: "Content is required." }, { status: 400 });
+    }
+    if (content.length > 50_000) {
+      return NextResponse.json({ error: "Content is too large." }, { status: 400 });
+    }
+    if (contentType !== "testCase" && contentType !== "testScript") {
+      return NextResponse.json({ error: "Invalid content type." }, { status: 400 });
     }
 
-    const title = content.split("\n")[0].trim() || "Untitled Test Case";
-
-    const newTestCaseRef = await db.collection("testCases").add({
+    const title = content.trim().split("\n")[0].slice(0, 160) || "Untitled";
+    const reference = await collection.add({
       title,
-      content,
-      contentType: contentType || "defaultType", // Ensure it is always set
-      createdAt: admin.firestore.Timestamp.now(),
+      content: content.trim(),
+      contentType,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: null,
     });
 
-    return NextResponse.json(
-      {
-        id: newTestCaseRef.id,
-        title,
-        content,
-        contentType: contentType || "defaultType",
-        message: "Test case saved successfully!",
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ id: reference.id, title, contentType }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error saving test case" },
-      { status: 500 }
-    );
+    console.error("Unable to save test item:", error);
+    return NextResponse.json({ error: "Unable to save item." }, { status: 500 });
   }
 }
 
-// 🔥 DELETE method to remove test cases
-export async function DELETE(req: Request) {
+export async function PUT(request: Request) {
   try {
-    const { id } = await req.json();
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing test case ID" },
-        { status: 400 }
-      );
+    const body: unknown = await request.json();
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "A JSON request body is required." }, { status: 400 });
+    }
+    const { id, title, content } = body as { id?: unknown; title?: unknown; content?: unknown };
+    if (typeof id !== "string" || !id || typeof content !== "string" || !content.trim()) {
+      return NextResponse.json({ error: "A valid id and content are required." }, { status: 400 });
     }
 
-    await db.collection("testCases").doc(id).delete();
+    const reference = collection.doc(id);
+    const document = await reference.get();
+    if (!document.exists) return NextResponse.json({ error: "Saved item not found." }, { status: 404 });
 
-    return NextResponse.json(
-      { message: "Test case deleted successfully" },
-      { status: 200 }
-    );
+    await reference.update({
+      title: typeof title === "string" && title.trim()
+        ? title.trim().slice(0, 160)
+        : content.trim().split("\n")[0].slice(0, 160),
+      content: content.trim(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return NextResponse.json({ message: "Saved item updated." });
   } catch (error) {
-    console.error("Error deleting test case:", error);
-    return NextResponse.json(
-      { error: "Error deleting test case" },
-      { status: 500 }
-    );
+    console.error("Unable to update saved item:", error);
+    return NextResponse.json({ error: "Unable to update saved item." }, { status: 500 });
   }
 }
 
-// 🔥 PUT method to update test cases
-export async function PUT(req: Request) {
+export async function DELETE(request: Request) {
   try {
-    const { id, title, content } = await req.json();
-
-    // Check if both the title and content are provided
-    if (!id || !content) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    const body: unknown = await request.json();
+    const id = body && typeof body === "object" ? (body as { id?: unknown }).id : undefined;
+    if (typeof id !== "string" || !id) {
+      return NextResponse.json({ error: "A valid id is required." }, { status: 400 });
     }
-
-    // Optionally, set the title from content if it's not provided
-    const updatedTitle =
-      title || content.split("\n")[0].trim() || "Untitled Test Case";
-
-    // Ensure that the 'updatedAt' field is set correctly
-    const updatedTestCase = {
-      title: updatedTitle,
-      content,
-      updatedAt: admin.firestore.Timestamp.now(),
-    };
-
-    // Update the document in Firestore
-    await db.collection("testCases").doc(id).update(updatedTestCase);
-
-    // Return success response
-    return NextResponse.json(
-      { message: "Test case updated successfully" },
-      { status: 200 }
-    );
+    const reference = collection.doc(id);
+    const document = await reference.get();
+    if (!document.exists) return NextResponse.json({ error: "Saved item not found." }, { status: 404 });
+    await reference.delete();
+    return NextResponse.json({ message: "Saved item deleted." });
   } catch (error) {
-    console.error("🔥 Error updating test case:", error);
-    return NextResponse.json(
-      { error: "Error updating test case" },
-      { status: 500 }
-    );
+    console.error("Unable to delete saved item:", error);
+    return NextResponse.json({ error: "Unable to delete saved item." }, { status: 500 });
   }
 }
