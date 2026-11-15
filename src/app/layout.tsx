@@ -1,21 +1,21 @@
-// app/layout.tsx
-"use client";
-import { CopyProvider } from "@/components/CopyContext"; // Adjust path
-import Navigation from "@/components/Navigation"; // Import your Navigation component
+import type { Metadata } from "next";
+import Navigation from "@/components/Navigation";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const metadata: Metadata = {
+  title: "AI Test Generator",
+  description: "Generate QA test cases and automation scripts with AI.",
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
-        {/* Include Navigation here */}
-        <Navigation />
-
-        <CopyProvider>{children}</CopyProvider>
+        <Providers>
+          <Navigation />
+          {children}
+        </Providers>
       </body>
     </html>
   );
