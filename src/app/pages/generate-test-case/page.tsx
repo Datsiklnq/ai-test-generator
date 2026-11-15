@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthContext";
 import { motion } from "framer-motion";
 import GenerateTestCase from "@/components/GenerateTestCase";
 import GenerateTestScript from "@/components/GenerateTestScript";
 import { Button } from "@/components/ui/button";
 
 export default function GenerateTestPage() {
+  const { user, loading: authLoading, getIdToken } = useAuth();
+  const router = useRouter();
+  useEffect(() => { if (!authLoading && !user) router.replace("/login"); }, [authLoading, user]);
   const [prompt, setPrompt] = useState("");
   const [framework, setFramework] = useState("playwright");
   const [testCase, setTestCase] = useState("");
@@ -22,9 +27,10 @@ export default function GenerateTestPage() {
     setTestScript("");
 
     try {
+      const token = await getIdToken();
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ prompt: prompt.trim(), framework }),
       });
       const data = await response.json();
