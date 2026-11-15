@@ -38,7 +38,7 @@ export default function SavedTestScriptsPage() {
       }
     };
     void loadScripts();
-  }, [authLoading, user]);
+  }, [authLoading, user, getIdToken, router]);
 
   return (
     <main className="min-h-screen bg-gray-900 px-4 py-24 text-gray-200">
