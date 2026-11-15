@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const auth = await requireUser(request);
-  if (auth.response || !auth.user) return auth.response;
+  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401 });
   try {
     const body: unknown = await request.json();
     if (!body || typeof body !== "object") {
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const auth = await requireUser(request);
-  if (auth.response || !auth.user) return auth.response;
+  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401 });
   try {
     const body: unknown = await request.json();
     if (!body || typeof body !== "object") {
@@ -103,7 +103,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const auth = await requireUser(request);
-  if (auth.response || !auth.user) return auth.response;
+  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401 });
   try {
     const body: unknown = await request.json();
     const id = body && typeof body === "object" ? (body as { id?: unknown }).id : undefined;
