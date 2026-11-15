@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { Tooltip } from "@/components/ui/tooltip"; // Assuming you have a Tooltip component
 import EditModal from "@/components/ui/editModal"; // Adjust the import path accordingly
 
@@ -12,7 +11,8 @@ interface TestCase {
   title: string;
   content: string;
   createdAt: string;
-  updatedAt?: string; // Optional updatedAt field
+  updatedAt?: string;
+  contentType?: "testCase" | "testScript";
 }
 
 const SavedTestCasesPage = () => {
@@ -31,8 +31,8 @@ const SavedTestCasesPage = () => {
     try {
       const response = await fetch("/api/saved-test-cases");
       if (!response.ok) throw new Error("Failed to fetch test cases");
-      const data = await response.json();
-      setSavedTestCases(data);
+      const data: TestCase[] = await response.json();
+      setSavedTestCases(data.filter((item) => item.contentType === "testCase"));
     } catch (error) {
       console.error("Error fetching test cases:", error);
       toast.error("Failed to load test cases. Please try again.");
@@ -209,14 +209,6 @@ const SavedTestCasesPage = () => {
         handleSaveEdit={handleSaveEdit}
       />
 
-      {/* Toast Container for success and error messages */}
-      <ToastContainer
-        position="bottom-left"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeButton={true}
-      />
     </div>
   );
 };
