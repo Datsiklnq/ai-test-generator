@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react";
 import { toast } from "react-toastify";
 import { Tooltip } from "@/components/ui/tooltip"; // Assuming you have a Tooltip component
-import EditModal from "@/components/ui/editModal"; // Adjust the import path accordingly
+import EditModal from "@/components/ui/editModal";
+import { useAuth } from "@/components/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface TestCase {
   id: string;
@@ -16,6 +18,8 @@ interface TestCase {
 }
 
 const SavedTestCasesPage = () => {
+  const { user, loading: authLoading, getIdToken } = useAuth();
+  const router = useRouter();
   const [savedTestCases, setSavedTestCases] = useState<TestCase[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(null);
@@ -24,12 +28,14 @@ const SavedTestCasesPage = () => {
 
   // Fetch test cases
   useEffect(() => {
-    fetchTestCases();
-  }, []);
+    if (!authLoading && !user) router.replace("/login");
+    if (user) void fetchTestCases();
+  }, [authLoading, user]);
 
   const fetchTestCases = async () => {
     try {
-      const response = await fetch("/api/saved-test-cases");
+      const token = await getIdToken();
+      const response = await fetch("/api/saved-test-cases", { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error("Failed to fetch test cases");
       const data: TestCase[] = await response.json();
       setSavedTestCases(data.filter((item) => item.contentType === "testCase"));
@@ -44,7 +50,7 @@ const SavedTestCasesPage = () => {
     try {
       const response = await fetch("/api/saved-test-cases", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await getIdToken()}` },
         body: JSON.stringify({ id }),
       });
 
@@ -90,6 +96,7 @@ const SavedTestCasesPage = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${await getIdToken()}`,
         },
         body: JSON.stringify(updatedTestCase),
       });
