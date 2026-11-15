@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 export default function GenerateTestPage() {
   const { user, loading: authLoading, getIdToken } = useAuth();
   const router = useRouter();
-  useEffect(() => { if (!authLoading && !user) router.replace("/login"); }, [authLoading, user]);
+  useEffect(() => { if (!authLoading && !user) router.replace("/login"); }, [authLoading, user, router]);
   const [prompt, setPrompt] = useState("");
   const [framework, setFramework] = useState("playwright");
   const [testCase, setTestCase] = useState("");
