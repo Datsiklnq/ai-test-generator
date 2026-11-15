@@ -1,6 +1,6 @@
 "use client"; // Mark this as a client component
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react";
 import { toast } from "react-toastify";
 import { Tooltip } from "@/components/ui/tooltip"; // Assuming you have a Tooltip component
@@ -26,13 +26,7 @@ const SavedTestCasesPage = () => {
   const [newTitle, setNewTitle] = useState<string>("");
   const [newContent, setNewContent] = useState<string>("");
 
-  // Fetch test cases
-  useEffect(() => {
-    if (!authLoading && !user) router.replace("/login");
-    if (user) void fetchTestCases();
-  }, [authLoading, user]);
-
-  const fetchTestCases = async () => {
+  const fetchTestCases = useCallback(async () => {
     try {
       const token = await getIdToken();
       const response = await fetch("/api/saved-test-cases", { headers: { Authorization: `Bearer ${token}` } });
@@ -43,7 +37,12 @@ const SavedTestCasesPage = () => {
       console.error("Error fetching test cases:", error);
       toast.error("Failed to load test cases. Please try again.");
     }
-  };
+  }, [getIdToken]);
+
+  useEffect(() => {
+    if (!authLoading && !user) router.replace("/login");
+    if (user) void fetchTestCases();
+  }, [authLoading, user, router, fetchTestCases]);
 
   // Handle delete functionality
   const deleteTestCase = async (id: string) => {
