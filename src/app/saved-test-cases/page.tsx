@@ -1,50 +1,55 @@
 "use client"; // Mark this as a client component
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { Tooltip } from "@/components/ui/tooltip"; // Assuming you have a Tooltip component
-import EditModal from "@/components/ui/editModal"; // Adjust the import path accordingly
+import EditModal from "@/components/ui/editModal";
+import { useAuth } from "@/components/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface TestCase {
   id: string;
   title: string;
   content: string;
   createdAt: string;
-  updatedAt?: string; // Optional updatedAt field
+  updatedAt?: string;
+  contentType?: "testCase" | "testScript";
 }
 
 const SavedTestCasesPage = () => {
+  const { user, loading: authLoading, getIdToken } = useAuth();
+  const router = useRouter();
   const [savedTestCases, setSavedTestCases] = useState<TestCase[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(null);
   const [newTitle, setNewTitle] = useState<string>("");
   const [newContent, setNewContent] = useState<string>("");
 
-  // Fetch test cases
-  useEffect(() => {
-    fetchTestCases();
-  }, []);
-
-  const fetchTestCases = async () => {
+  const fetchTestCases = useCallback(async () => {
     try {
-      const response = await fetch("/api/saved-test-cases");
+      const token = await getIdToken();
+      const response = await fetch("/api/saved-test-cases", { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error("Failed to fetch test cases");
-      const data = await response.json();
-      setSavedTestCases(data);
+      const data: TestCase[] = await response.json();
+      setSavedTestCases(data.filter((item) => item.contentType === "testCase"));
     } catch (error) {
       console.error("Error fetching test cases:", error);
       toast.error("Failed to load test cases. Please try again.");
     }
-  };
+  }, [getIdToken]);
+
+  useEffect(() => {
+    if (!authLoading && !user) router.replace("/login");
+    if (user) void fetchTestCases();
+  }, [authLoading, user, router, fetchTestCases]);
 
   // Handle delete functionality
   const deleteTestCase = async (id: string) => {
     try {
       const response = await fetch("/api/saved-test-cases", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await getIdToken()}` },
         body: JSON.stringify({ id }),
       });
 
@@ -90,6 +95,7 @@ const SavedTestCasesPage = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${await getIdToken()}`,
         },
         body: JSON.stringify(updatedTestCase),
       });
@@ -209,14 +215,6 @@ const SavedTestCasesPage = () => {
         handleSaveEdit={handleSaveEdit}
       />
 
-      {/* Toast Container for success and error messages */}
-      <ToastContainer
-        position="bottom-left"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeButton={true}
-      />
     </div>
   );
 };

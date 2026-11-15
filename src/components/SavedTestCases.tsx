@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useCopy } from "./CopyContext";
+import { useAuth } from "@/components/AuthContext";
 
 interface SavedTestCasesProps {
   content: string;
@@ -12,12 +13,14 @@ interface SavedTestCasesProps {
 export default function SavedTestCases({ content, contentType }: SavedTestCasesProps) {
   const [isSaved, setIsSaved] = useState(false);
   const { isCopied, copyToClipboard } = useCopy();
+  const { getIdToken } = useAuth();
 
   const handleSave = async () => {
     try {
+      const token = await getIdToken();
       const response = await fetch("/api/saved-test-cases", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content, contentType }),
       });
       if (!response.ok) throw new Error("Save request failed");

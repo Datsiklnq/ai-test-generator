@@ -14,6 +14,7 @@ const navLinks: NavLink[] = [
   { name: "Test Case Generator", href: "/pages/generate-test-case" },
   { name: "Saved Test Cases", href: "/saved-test-cases" },
   { name: "Saved Test Scripts", href: "/saved-test-scripts" },
+  { name: "Sign in", href: "/login" },
 ];
 
 const Navigation = () => {
