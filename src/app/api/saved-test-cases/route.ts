@@ -11,7 +11,7 @@ function serializeTimestamp(value: { toDate: () => Date } | undefined) {
 
 export async function GET(request: Request) {
   const auth = await requireUser(request);
-  if (auth.response || !auth.user) return auth.response;
+  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401);
   try {
     const snapshot = await collection.where("userId", "==", auth.user.uid).get();
     const items = snapshot.docs.map((document) => {
