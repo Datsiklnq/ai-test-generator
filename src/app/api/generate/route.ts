@@ -30,7 +30,7 @@ async function enforceGenerationLimit(uid: string) {
 
 export async function POST(request: NextRequest) {
   const auth = await requireUser(request);
-  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401);
+  if (!auth.user) return auth.response ?? NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
   try {
     const body: unknown = await request.json();
